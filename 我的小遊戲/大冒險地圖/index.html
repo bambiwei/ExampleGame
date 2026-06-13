@@ -683,7 +683,7 @@
     let draggedBadge = null;
     let touchState = null;
     let endingIndex = 0;
-    let compassRightClicks = 0;
+    let compassClicks = 0;
     let compassClickTimer = null;
 
     function init() {
@@ -728,7 +728,7 @@
     function unlockAllForTesting() {
       LEVELS.forEach(level => localStorage.setItem(level.key, "true"));
       renderMapState();
-      compassRightClicks = 0;
+      compassClicks = 0;
       clearTimeout(compassClickTimer);
       compassClickTimer = null;
     }
@@ -972,15 +972,14 @@
     coverScreen.addEventListener("click", hideCover);
     clearBtn.addEventListener("click", clearProgress);
     doorHotspot.addEventListener("click", openDoor);
-    testCompass.addEventListener("contextmenu", event => {
-      event.preventDefault();
-      compassRightClicks += 1;
+    testCompass.addEventListener("click", () => {
+      compassClicks += 1;
       clearTimeout(compassClickTimer);
       compassClickTimer = setTimeout(() => {
-        compassRightClicks = 0;
+        compassClicks = 0;
       }, 1600);
 
-      if (compassRightClicks >= 3) {
+      if (compassClicks >= 4) {
         unlockAllForTesting();
       }
     });
