@@ -179,6 +179,15 @@
       height: 12.5%;
     }
 
+    .test-compass {
+      position: absolute;
+      left: 88.2%;
+      top: 78.0%;
+      width: 9.2%;
+      height: 18.0%;
+      border-radius: 50%;
+    }
+
     .done-stamp {
       position: absolute;
       right: -10px;
@@ -547,6 +556,7 @@
       <div class="hotspot idiom" data-level="idiom" aria-label="成語填字"></div>
       <div class="hotspot warrior" data-level="warrior" aria-label="打怪 RPG"></div>
       <div class="hotspot door" id="doorHotspot" aria-label="中央大門"></div>
+      <div class="test-compass" id="testCompass" aria-hidden="true"></div>
     </div>
   </main>
 
@@ -629,6 +639,7 @@
     const clearBtn = document.querySelector("#clearBtn");
     const mapFrame = document.querySelector("#mapFrame");
     const doorHotspot = document.querySelector("#doorHotspot");
+    const testCompass = document.querySelector("#testCompass");
     const doorOverlay = document.querySelector("#doorOverlay");
     const closeDoorBtn = document.querySelector("#closeDoorBtn");
     const slots = document.querySelector("#slots");
@@ -672,6 +683,8 @@
     let draggedBadge = null;
     let touchState = null;
     let endingIndex = 0;
+    let compassRightClicks = 0;
+    let compassClickTimer = null;
 
     function init() {
       if (!localStorage.getItem(ADVENTURE_START_KEY)) {
@@ -710,6 +723,14 @@
           hotspot.appendChild(stamp);
         }
       });
+    }
+
+    function unlockAllForTesting() {
+      LEVELS.forEach(level => localStorage.setItem(level.key, "true"));
+      renderMapState();
+      compassRightClicks = 0;
+      clearTimeout(compassClickTimer);
+      compassClickTimer = null;
     }
 
     function goToLevel(levelId) {
@@ -951,6 +972,18 @@
     coverScreen.addEventListener("click", hideCover);
     clearBtn.addEventListener("click", clearProgress);
     doorHotspot.addEventListener("click", openDoor);
+    testCompass.addEventListener("contextmenu", event => {
+      event.preventDefault();
+      compassRightClicks += 1;
+      clearTimeout(compassClickTimer);
+      compassClickTimer = setTimeout(() => {
+        compassRightClicks = 0;
+      }, 1600);
+
+      if (compassRightClicks >= 3) {
+        unlockAllForTesting();
+      }
+    });
     closeDoorBtn.addEventListener("click", () => doorOverlay.classList.remove("show"));
     restartAdventureBtn.addEventListener("click", restartAdventure);
     restartEndingBtn.addEventListener("click", restartAdventure);
