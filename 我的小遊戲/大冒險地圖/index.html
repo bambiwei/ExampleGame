@@ -374,6 +374,126 @@
       transform: translate(-50%, -50%) scale(1.04);
     }
 
+    .ending-cutscene {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      color: var(--text);
+      background: #02040a;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+
+    .ending-cutscene.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .ending-cutscene.fade-out {
+      opacity: 0;
+    }
+
+    .ending-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;
+    }
+
+    .ending-title {
+      position: absolute;
+      top: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 18px;
+      color: var(--gold);
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 213, 107, 0.35);
+      border-radius: 999px;
+      font-size: clamp(1.35rem, 4vw, 2.4rem);
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-shadow: 0 0 18px rgba(255, 213, 107, 0.45);
+      white-space: nowrap;
+    }
+
+    .narration-box {
+      position: absolute;
+      left: 50%;
+      bottom: 7vh;
+      transform: translateX(-50%);
+      width: min(860px, calc(100% - 34px));
+      padding: clamp(18px, 3vw, 28px);
+      background: rgba(3, 6, 14, 0.78);
+      border: 2px solid rgba(255, 213, 107, 0.46);
+      border-radius: 12px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    .speaker {
+      margin-bottom: 8px;
+      color: var(--gold);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .narration {
+      margin: 0;
+      font-size: clamp(1.25rem, 3.2vw, 2.1rem);
+      font-weight: 900;
+      line-height: 1.65;
+      white-space: pre-line;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .next-hint {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      text-align: right;
+      animation: pulse 1.2s ease infinite;
+    }
+
+    .ending-final {
+      position: fixed;
+      inset: 0;
+      z-index: 41;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at center, rgba(255, 213, 107, 0.18), transparent 24rem),
+        #02040a;
+      text-align: center;
+    }
+
+    .ending-final.show {
+      display: grid;
+    }
+
+    .ending-final h2 {
+      margin: 0 0 12px;
+      color: var(--gold);
+      font-size: clamp(2.4rem, 9vw, 5.6rem);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 24px rgba(255, 213, 107, 0.45);
+    }
+
+    .ending-final p {
+      margin: 8px 0;
+      color: var(--muted);
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .ending-actions {
+      margin-top: 24px;
+    }
+
     @keyframes pulse {
       50% { opacity: 0.62; }
     }
@@ -450,6 +570,27 @@
     </div>
   </div>
 
+  <div class="ending-cutscene" id="endingCutscene" aria-label="結局過場">
+    <img class="ending-image" id="endingImage" src="1.png" alt="結局過場圖">
+    <div class="ending-title">《文墨永恆》</div>
+    <div class="narration-box">
+      <div class="speaker" id="endingSpeaker">旁白</div>
+      <p class="narration" id="endingText"></p>
+      <div class="next-hint">點擊畫面繼續</div>
+    </div>
+  </div>
+
+  <div class="ending-final" id="endingFinal">
+    <div>
+      <h2>【冒險完成】</h2>
+      <p>感謝你的探索。</p>
+      <p id="finalTimeText">總冒險時長：00 分 00 秒</p>
+      <div class="ending-actions">
+        <button class="modal-btn" id="restartEndingBtn" type="button">再次冒險</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const LEVELS = [
       {
@@ -496,10 +637,41 @@
     const victoryScreen = document.querySelector("#victoryScreen");
     const timeText = document.querySelector("#timeText");
     const restartAdventureBtn = document.querySelector("#restartAdventureBtn");
+    const endingCutscene = document.querySelector("#endingCutscene");
+    const endingImage = document.querySelector("#endingImage");
+    const endingSpeaker = document.querySelector("#endingSpeaker");
+    const endingText = document.querySelector("#endingText");
+    const endingFinal = document.querySelector("#endingFinal");
+    const finalTimeText = document.querySelector("#finalTimeText");
+    const restartEndingBtn = document.querySelector("#restartEndingBtn");
+
+    const ENDING_SCENES = [
+      {
+        image: "1.png",
+        speaker: "旁白",
+        text: "當最後一道封印解開，\n被遺忘的道路，再次顯現。"
+      },
+      {
+        image: "2.png",
+        speaker: "旁白",
+        text: "人們以為尋找的是答案，\n其實尋找的，是走到答案之前的自己。"
+      },
+      {
+        image: "3.png",
+        speaker: "神秘守護者",
+        text: "知識終會散去，\n但探索之心，會被下一位旅人拾起。"
+      },
+      {
+        image: "4.png",
+        speaker: "旁白",
+        text: "故事沒有終點。\n每一次抵達，\n都只是下一段旅程的開始。"
+      }
+    ];
 
     let placed = {};
     let draggedBadge = null;
     let touchState = null;
+    let endingIndex = 0;
 
     function init() {
       if (!localStorage.getItem(ADVENTURE_START_KEY)) {
@@ -652,13 +824,48 @@
     }
 
     function showVictory() {
-      doorPuzzle.style.display = "none";
+      doorOverlay.classList.remove("show");
+      startEndingCutscene();
+    }
+
+    function startEndingCutscene() {
+      endingIndex = 0;
+      renderEndingScene();
+      endingCutscene.classList.remove("fade-out");
+      endingCutscene.classList.add("show");
+    }
+
+    function renderEndingScene() {
+      const scene = ENDING_SCENES[endingIndex];
+      endingImage.src = scene.image;
+      endingImage.alt = `《文墨永恆》第 ${endingIndex + 1} 張過場圖`;
+      endingSpeaker.textContent = scene.speaker;
+      endingText.textContent = scene.text;
+    }
+
+    function nextEndingScene() {
+      if (!endingCutscene.classList.contains("show")) {
+        return;
+      }
+
+      if (endingIndex < ENDING_SCENES.length - 1) {
+        endingIndex += 1;
+        renderEndingScene();
+        return;
+      }
+
+      endingCutscene.classList.add("fade-out");
+      setTimeout(showEndingFinal, 700);
+    }
+
+    function showEndingFinal() {
+      endingCutscene.classList.remove("show", "fade-out");
       const start = Number(localStorage.getItem(ADVENTURE_START_KEY)) || Date.now();
       const totalSeconds = Math.max(0, Math.floor((Date.now() - start) / 1000));
       const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
       const seconds = String(totalSeconds % 60).padStart(2, "0");
-      timeText.textContent = `總冒險時長：${minutes} 分 ${seconds} 秒`;
-      victoryScreen.classList.add("show");
+      finalTimeText.textContent = `總冒險時長：${minutes} 分 ${seconds} 秒`;
+      endingFinal.classList.add("show");
     }
 
     function clearAdventureStorage() {
@@ -676,6 +883,8 @@
     function restartAdventure() {
       clearAdventureStorage();
       doorOverlay.classList.remove("show");
+      endingCutscene.classList.remove("show", "fade-out");
+      endingFinal.classList.remove("show");
       localStorage.setItem(ADVENTURE_START_KEY, String(Date.now()));
       renderMapState();
       coverScreen.classList.remove("hidden");
@@ -744,6 +953,8 @@
     doorHotspot.addEventListener("click", openDoor);
     closeDoorBtn.addEventListener("click", () => doorOverlay.classList.remove("show"));
     restartAdventureBtn.addEventListener("click", restartAdventure);
+    restartEndingBtn.addEventListener("click", restartAdventure);
+    endingCutscene.addEventListener("click", nextEndingScene);
     doorOverlay.addEventListener("click", event => {
       if (event.target === doorOverlay) {
         doorOverlay.classList.remove("show");
