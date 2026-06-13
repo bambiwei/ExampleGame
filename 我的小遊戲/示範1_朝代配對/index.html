@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>朝代配對</title>
+  <style>
+    :root {
+      --bg: #130d0a;
+      --panel: #21150f;
+      --panel-dark: #17100d;
+      --gold: #d7aa4a;
+      --gold-light: #ffe4a0;
+      --paper: #efe0bd;
+      --paper-dark: #c9ac74;
+      --red: #a62922;
+      --red-bright: #ff4d3d;
+      --green: #2fb36d;
+      --ink: #28170e;
+      --text: #fff4dc;
+      --muted: #d7c6a5;
+      --shadow: rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(166, 41, 34, 0.32), transparent 24rem),
+        radial-gradient(circle at 78% 0%, rgba(215, 170, 74, 0.18), transparent 25rem),
+        linear-gradient(135deg, #070403, var(--bg));
+      font-family: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background-image:
+        linear-gradient(rgba(215, 170, 74, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(215, 170, 74, 0.045) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+    }
+
+    .app {
+      position: relative;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 42px;
+    }
+
+    .map-link {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 9;
+      padding: 9px 13px;
+      color: var(--text);
+      background: rgba(33, 21, 15, 0.9);
+      border: 1px solid rgba(215, 170, 74, 0.58);
+      border-radius: 999px;
+      box-shadow: 0 10px 24px var(--shadow);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    header {
+      display: flex;
+      gap: 18px;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--gold-light);
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1.1;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 22px rgba(215, 170, 74, 0.28);
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stat {
+      min-width: 116px;
+      padding: 10px 14px;
+      background: rgba(33, 21, 15, 0.82);
+      border: 1px solid rgba(215, 170, 74, 0.48);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px var(--shadow);
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--gold-light);
+      font-size: 1.35rem;
+      line-height: 1.1;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .section {
+      padding: 18px;
+      background: rgba(23, 16, 13, 0.88);
+      border: 1px solid rgba(215, 170, 74, 0.42);
+      border-radius: 10px;
+      box-shadow: 0 18px 50px var(--shadow);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--gold-light);
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .dynasty-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .dynasty-card {
+      min-height: 192px;
+      padding: 12px;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.25), transparent 40%),
+        var(--paper);
+      border: 2px solid var(--gold);
+      border-radius: 10px;
+      box-shadow:
+        inset 0 0 0 1px rgba(83, 49, 19, 0.18),
+        0 12px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .dynasty-name {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 54px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(83, 49, 19, 0.24);
+      color: #5c2115;
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-indent: 0.2em;
+    }
+
+    .drop-zone {
+      min-height: 104px;
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 7px;
+      background: rgba(57, 36, 18, 0.12);
+      border: 1px dashed rgba(92, 33, 21, 0.36);
+      border-radius: 8px;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .drop-zone.is-over {
+      background: rgba(215, 170, 74, 0.26);
+      border-color: var(--red);
+      transform: translateY(-2px);
+    }
+
+    .events-bank {
+      min-height: 520px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .event-card {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      padding: 11px 12px;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(166, 41, 34, 0.22), transparent 42%),
+        var(--panel);
+      border: 1px solid rgba(255, 77, 61, 0.72);
+      border-radius: 8px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .event-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(166, 41, 34, 0.24);
+    }
+
+    .event-card.dragging {
+      opacity: 0.55;
+    }
+
+    .event-card.wrong {
+      animation: wrongFlash 0.3s ease;
+    }
+
+    .event-card.locked {
+      width: auto;
+      min-width: 92px;
+      max-width: 100%;
+      padding: 6px 8px;
+      color: #072414;
+      background: linear-gradient(135deg, #a8f0bf, var(--green));
+      border-color: #177544;
+      box-shadow: 0 6px 14px rgba(47, 179, 109, 0.22);
+      cursor: default;
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    .event-card.locked .icon {
+      width: 22px;
+      height: 22px;
+      font-size: 1rem;
+    }
+
+    .icon {
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 244, 220, 0.08);
+      border: 1px solid rgba(215, 170, 74, 0.26);
+      border-radius: 7px;
+      font-size: 1.25rem;
+    }
+
+    .event-text {
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .empty-hint {
+      padding: 26px 16px;
+      display: none;
+      color: var(--muted);
+      border: 1px dashed rgba(215, 170, 74, 0.36);
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .events-bank:empty + .empty-hint {
+      display: block;
+    }
+
+    .complete-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(10, 5, 3, 0.68);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .complete-overlay.show {
+      display: grid;
+      animation: goldFlash 0.8s ease both;
+    }
+
+    .complete-dialog {
+      width: min(92vw, 420px);
+      padding: 28px;
+      background: linear-gradient(145deg, #2b180d, #120a07);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      text-align: center;
+      box-shadow:
+        0 0 36px rgba(215, 170, 74, 0.52),
+        0 0 80px rgba(166, 41, 34, 0.22),
+        0 24px 70px var(--shadow);
+    }
+
+    .complete-dialog h2 {
+      margin: 0 0 8px;
+      color: var(--gold-light);
+      font-size: 2.1rem;
+      letter-spacing: 0.08em;
+    }
+
+    .complete-dialog p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .restart {
+      padding: 12px 22px;
+      color: #301908;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(215, 170, 74, 0.28);
+    }
+
+    @keyframes wrongFlash {
+      0%, 100% {
+        transform: translateX(0);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+      25% {
+        transform: translateX(-7px);
+        box-shadow: 0 0 24px rgba(255, 77, 61, 0.95);
+      }
+      50% {
+        transform: translateX(7px);
+        background: #64130f;
+      }
+      75% {
+        transform: translateX(-4px);
+      }
+    }
+
+    @keyframes goldFlash {
+      0% {
+        background: rgba(255, 228, 160, 0.8);
+        opacity: 0;
+      }
+      35% {
+        opacity: 1;
+      }
+      100% {
+        background: rgba(10, 5, 3, 0.68);
+      }
+    }
+
+    @media (max-width: 820px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      .app {
+        width: min(100% - 22px, 620px);
+        padding-top: 24px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .stats {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .stat {
+        flex: 1;
+      }
+
+      .board {
+        grid-template-columns: 1fr;
+      }
+
+      .dynasty-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dynasty-card {
+        min-height: 168px;
+      }
+
+      .events-bank {
+        min-height: 0;
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .event-card {
+        flex: 0 0 235px;
+        scroll-snap-align: start;
+      }
+
+      .event-card.locked {
+        flex: 0 1 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="map-link" href="../大冒險地圖/index.html">← 回到大地圖</a>
+  <main class="app">
+    <header>
+      <div>
+        <h1>朝代配對</h1>
+        <p class="subtitle">把右側事件拖到正確朝代。每次拖放都會計入嘗試次數。</p>
+      </div>
+      <div class="stats" aria-label="遊戲統計">
+        <div class="stat">
+          <strong id="attempts">0</strong>
+          <span>嘗試次數</span>
+        </div>
+        <div class="stat">
+          <strong id="matched">0 / 16</strong>
+          <span>已完成</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="board">
+      <div class="section">
+        <div class="section-title">
+          <span>左欄：朝代卡格</span>
+          <span>可放多張事件</span>
+        </div>
+        <div class="dynasty-grid" id="dynastyGrid"></div>
+      </div>
+
+      <aside class="section">
+        <div class="section-title">
+          <span>右欄：事件卡</span>
+          <span>拖曳配對</span>
+        </div>
+        <div class="events-bank" id="eventsBank"></div>
+        <div class="empty-hint">事件已全部配對完成</div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="complete-overlay" id="completeOverlay" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
+    <div class="complete-dialog">
+      <h2 id="completeTitle">過關！</h2>
+      <p id="completeText">總嘗試次數：0</p>
+      <button class="restart" id="restart" type="button">再玩一次</button>
+    </div>
+  </div>
+
+  <script>
+    const dynasties = [
+      { id: 1, name: "秦" },
+      { id: 2, name: "漢" },
+      { id: 3, name: "唐" },
+      { id: 4, name: "宋" },
+      { id: 5, name: "明" },
+      { id: 6, name: "清" }
+    ];
+
+    const events = [
+      { id: "e1", dynasty_id: 1, text: "統一六國", icon: "⚔️" },
+      { id: "e2", dynasty_id: 1, text: "修築萬里長城", icon: "🧱" },
+      { id: "e3", dynasty_id: 1, text: "焚書坑儒", icon: "🔥" },
+      { id: "e4", dynasty_id: 2, text: "張騫通西域", icon: "🐪" },
+      { id: "e5", dynasty_id: 2, text: "文景之治", icon: "📜" },
+      { id: "e6", dynasty_id: 2, text: "罷黜百家獨尊儒術", icon: "📖" },
+      { id: "e7", dynasty_id: 3, text: "貞觀之治", icon: "👑" },
+      { id: "e8", dynasty_id: 3, text: "安史之亂", icon: "💥" },
+      { id: "e9", dynasty_id: 3, text: "玄奘西行取經", icon: "🧘" },
+      { id: "e10", dynasty_id: 4, text: "王安石變法", icon: "📜" },
+      { id: "e11", dynasty_id: 4, text: "岳飛抗金", icon: "🗡️" },
+      { id: "e12", dynasty_id: 5, text: "鄭和下西洋", icon: "⛵" },
+      { id: "e13", dynasty_id: 5, text: "永樂大典編成", icon: "📚" },
+      { id: "e14", dynasty_id: 6, text: "鴉片戰爭", icon: "💣" },
+      { id: "e15", dynasty_id: 6, text: "康熙盛世", icon: "🌅" },
+      { id: "e16", dynasty_id: 6, text: "辛亥革命終結", icon: "🏛️" }
+    ];
+
+    const dynastyGrid = document.querySelector("#dynastyGrid");
+    const eventsBank = document.querySelector("#eventsBank");
+    const attemptsEl = document.querySelector("#attempts");
+    const matchedEl = document.querySelector("#matched");
+    const completeOverlay = document.querySelector("#completeOverlay");
+    const completeText = document.querySelector("#completeText");
+    const restartBtn = document.querySelector("#restart");
+
+    let attempts = 0;
+    let matched = 0;
+    let draggedId = "";
+
+    function startGame() {
+      attempts = 0;
+      matched = 0;
+      draggedId = "";
+      dynastyGrid.innerHTML = "";
+      eventsBank.innerHTML = "";
+      completeOverlay.classList.remove("show");
+      updateStats();
+      renderDynasties();
+      renderEvents();
+    }
+
+    function renderDynasties() {
+      dynasties.forEach(dynasty => {
+        const card = document.createElement("article");
+        card.className = "dynasty-card";
+        card.innerHTML = `
+          <div class="dynasty-name">${dynasty.name}</div>
+          <div class="drop-zone" data-dynasty-id="${dynasty.id}" aria-label="${dynasty.name}朝事件放置區"></div>
+        `;
+        dynastyGrid.appendChild(card);
+      });
+
+      document.querySelectorAll(".drop-zone").forEach(zone => {
+        zone.addEventListener("dragover", event => {
+          event.preventDefault();
+          zone.classList.add("is-over");
+        });
+        zone.addEventListener("dragleave", () => zone.classList.remove("is-over"));
+        zone.addEventListener("drop", handleDrop);
+      });
+    }
+
+    function renderEvents() {
+      shuffle([...events]).forEach(eventItem => {
+        eventsBank.appendChild(createEventCard(eventItem));
+      });
+    }
+
+    function createEventCard(eventItem) {
+      const card = document.createElement("div");
+      card.className = "event-card";
+      card.draggable = true;
+      card.id = eventItem.id;
+      card.dataset.dynastyId = String(eventItem.dynasty_id);
+      card.innerHTML = `
+        <span class="icon">${eventItem.icon}</span>
+        <span class="event-text">${eventItem.text}</span>
+      `;
+
+      card.addEventListener("dragstart", event => {
+        draggedId = card.id;
+        card.classList.add("dragging");
+        event.dataTransfer.setData("text/plain", card.id);
+        event.dataTransfer.effectAllowed = "move";
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+      });
+
+      return card;
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      const zone = event.currentTarget;
+      zone.classList.remove("is-over");
+
+      const eventId = event.dataTransfer.getData("text/plain") || draggedId;
+      const card = document.getElementById(eventId);
+      if (!card || card.classList.contains("locked")) {
+        return;
+      }
+
+      attempts += 1;
+      const targetDynastyId = zone.dataset.dynastyId;
+      const cardDynastyId = card.dataset.dynastyId;
+
+      if (targetDynastyId === cardDynastyId) {
+        lockCard(card, zone);
+      } else {
+        flashWrong(card);
+      }
+
+      updateStats();
+    }
+
+    function lockCard(card, zone) {
+      card.classList.remove("wrong");
+      card.classList.add("locked");
+      card.draggable = false;
+      zone.appendChild(card);
+      matched += 1;
+
+      if (matched === events.length) {
+        setTimeout(showComplete, 350);
+      }
+    }
+
+    function flashWrong(card) {
+      eventsBank.appendChild(card);
+      card.classList.remove("wrong");
+      void card.offsetWidth;
+      card.classList.add("wrong");
+      setTimeout(() => card.classList.remove("wrong"), 300);
+    }
+
+    function showComplete() {
+      localStorage.setItem("cert_dynasty", "true");
+      completeText.textContent = `總嘗試次數：${attempts}`;
+      completeOverlay.classList.add("show");
+      restartBtn.focus();
+    }
+
+    function updateStats() {
+      attemptsEl.textContent = attempts;
+      matchedEl.textContent = `${matched} / ${events.length}`;
+    }
+
+    function shuffle(items) {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items;
+    }
+
+    restartBtn.addEventListener("click", startGame);
+    startGame();
+  </script>
+</body>
+</html>

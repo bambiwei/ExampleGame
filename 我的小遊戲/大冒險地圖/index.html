@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>大冒險地圖</title>
+  <style>
+    :root {
+      --bg: #07111c;
+      --panel: #172038;
+      --panel-2: #222c4a;
+      --text: #fff8df;
+      --muted: #cfc5d6;
+      --gold: #ffd56b;
+      --green: #41d978;
+      --red: #ff5364;
+      --blue: #66ccff;
+      --line: rgba(255, 255, 255, 0.14);
+      --shadow: rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(circle at center, #123459, var(--bg) 72%);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .cover-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background: #000;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 0.7s ease;
+    }
+
+    .cover-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cover-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cover-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 5vh;
+      transform: translateX(-50%);
+      padding: 10px 18px;
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      animation: pulse 1.2s ease infinite;
+    }
+
+    .hud {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background: rgba(7, 17, 28, 0.68);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 14px;
+      box-shadow: 0 14px 36px var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .owned-count {
+      color: var(--gold);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .clear-btn,
+    .modal-btn {
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .clear-btn {
+      padding: 9px 13px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .map-stage {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .map-frame {
+      position: relative;
+      width: min(100%, calc((100vh - 24px) * 1.8643));
+      max-width: 1717px;
+      aspect-ratio: 1717 / 921;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 22px 70px var(--shadow);
+      background: #07111c;
+    }
+
+    .map-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .hotspot {
+      position: absolute;
+      border-radius: 14px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0);
+      transition: box-shadow 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .hotspot:hover {
+      background: rgba(255, 235, 150, 0.10);
+      box-shadow: 0 0 28px rgba(255, 225, 111, 0.62);
+      transform: scale(1.015);
+    }
+
+    .hotspot.dynasty {
+      left: 9.2%;
+      top: 35.4%;
+      width: 21.0%;
+      height: 8.6%;
+    }
+
+    .hotspot.idiom {
+      left: 71.0%;
+      top: 35.5%;
+      width: 22.0%;
+      height: 8.7%;
+    }
+
+    .hotspot.warrior {
+      left: 7.0%;
+      top: 86.0%;
+      width: 22.0%;
+      height: 9.0%;
+    }
+
+    .hotspot.door {
+      left: 39.8%;
+      top: 63.0%;
+      width: 21.0%;
+      height: 12.5%;
+    }
+
+    .done-stamp {
+      position: absolute;
+      right: -10px;
+      top: -18px;
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      color: #06200f;
+      background: var(--green);
+      border: 3px solid #dcffe7;
+      border-radius: 50%;
+      box-shadow: 0 0 22px rgba(65, 217, 120, 0.8);
+      font-size: 1.5rem;
+      font-weight: 1000;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      background: rgba(0, 0, 0, 0.64);
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay.show {
+      display: grid;
+    }
+
+    .door-modal {
+      width: min(94vw, 820px);
+      padding: 24px;
+      background: linear-gradient(180deg, #232a45, #14182a);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 28px 80px var(--shadow);
+    }
+
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-top h2 {
+      margin: 0;
+      color: var(--gold);
+      font-size: 1.7rem;
+    }
+
+    .close-btn {
+      width: 42px;
+      height: 42px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+
+    .slots,
+    .bag {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .slot {
+      min-height: 132px;
+      padding: 12px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 8px;
+      color: var(--muted);
+      background: #101423;
+      border: 2px dashed rgba(255, 211, 106, 0.42);
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    .slot.over {
+      background: rgba(102, 204, 255, 0.12);
+      border-color: var(--blue);
+    }
+
+    .slot.correct {
+      background: rgba(65, 217, 120, 0.14);
+      border-style: solid;
+      border-color: var(--green);
+    }
+
+    .slot.wrong {
+      animation: wrongFlash 0.3s ease;
+    }
+
+    .slot-label {
+      font-size: 1.05rem;
+      font-weight: 900;
+    }
+
+    .bag-title {
+      margin: 20px 0 10px;
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .bag {
+      min-height: 120px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .badge {
+      min-height: 92px;
+      padding: 12px;
+      display: grid;
+      place-items: center;
+      gap: 5px;
+      color: var(--text);
+      background: linear-gradient(180deg, #373f66, #242c48);
+      border: 1px solid rgba(255, 211, 106, 0.42);
+      border-radius: 12px;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .badge.locked {
+      color: #07170d;
+      background: linear-gradient(180deg, #a5f0c1, var(--green));
+      border-color: var(--green);
+      cursor: default;
+    }
+
+    .badge.dragging {
+      opacity: 0.45;
+    }
+
+    .badge-icon {
+      font-size: 2rem;
+    }
+
+    .empty-bag {
+      grid-column: 1 / -1;
+      display: grid;
+      place-items: center;
+      min-height: 88px;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+    }
+
+    .victory {
+      display: none;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .victory.show {
+      display: block;
+    }
+
+    .victory h2 {
+      margin: 0 0 10px;
+      color: var(--gold);
+      font-size: clamp(2rem, 7vw, 4rem);
+    }
+
+    .modal-btn {
+      padding: 13px 22px;
+      color: #211604;
+      background: linear-gradient(180deg, #fff0a8, var(--gold));
+    }
+
+    .touch-clone {
+      position: fixed;
+      z-index: 1000;
+      width: 150px;
+      pointer-events: none;
+      opacity: 0.94;
+      transform: translate(-50%, -50%) scale(1.04);
+    }
+
+    @keyframes pulse {
+      50% { opacity: 0.62; }
+    }
+
+    @keyframes wrongFlash {
+      50% {
+        transform: translateX(5px);
+        border-color: var(--red);
+        box-shadow: 0 0 22px rgba(255, 83, 100, 0.8);
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .hud {
+        top: 10px;
+        right: 10px;
+        transform: scale(0.9);
+        transform-origin: top right;
+      }
+
+      .map-stage {
+        min-height: 100vh;
+      }
+
+      .slots,
+      .bag {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="cover-screen" id="coverScreen" aria-label="遊戲開場封面">
+    <img src="cover.png" alt="大冒險地圖開場封面">
+    <div class="cover-hint">點擊開始冒險</div>
+  </div>
+
+  <div class="hud" aria-label="進度資訊">
+    <div class="owned-count" id="ownedCount">持有 0 / 3</div>
+    <button class="clear-btn" id="clearBtn" type="button">🔄 清除進度</button>
+  </div>
+
+  <main class="map-stage">
+    <div class="map-frame" id="mapFrame">
+      <img src="map-bg.png" alt="大冒險地圖">
+      <div class="hotspot dynasty" data-level="dynasty" aria-label="朝代配對"></div>
+      <div class="hotspot idiom" data-level="idiom" aria-label="成語填字"></div>
+      <div class="hotspot warrior" data-level="warrior" aria-label="打怪 RPG"></div>
+      <div class="hotspot door" id="doorHotspot" aria-label="中央大門"></div>
+    </div>
+  </main>
+
+  <div class="overlay" id="doorOverlay" role="dialog" aria-modal="true" aria-labelledby="doorTitle">
+    <div class="door-modal">
+      <div id="doorPuzzle">
+        <div class="modal-top">
+          <h2 id="doorTitle">通關大門</h2>
+          <button class="close-btn" id="closeDoorBtn" type="button" aria-label="關閉">×</button>
+        </div>
+        <div class="slots" id="slots"></div>
+        <div class="bag-title">背包欄：拖曳憑證到對應凹槽</div>
+        <div class="bag" id="bag"></div>
+      </div>
+
+      <div class="victory" id="victoryScreen">
+        <h2>🏆 冒險完成！</h2>
+        <p id="timeText">總冒險時長：00 分 00 秒</p>
+        <button class="modal-btn" id="restartAdventureBtn" type="button">再次冒險</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LEVELS = [
+      {
+        id: "dynasty",
+        key: "cert_dynasty",
+        icon: "🎴",
+        name: "朝代配對",
+        href: "../示範1_朝代配對/index.html",
+        certName: "朝代之印",
+        slotLabel: "朝代"
+      },
+      {
+        id: "idiom",
+        key: "cert_idiom",
+        icon: "📝",
+        name: "成語填字",
+        href: "../示範2_成語填字/index.html",
+        certName: "成語之印",
+        slotLabel: "成語"
+      },
+      {
+        id: "warrior",
+        key: "cert_warrior",
+        icon: "⚔️",
+        name: "打怪 RPG",
+        href: "../示範3_打怪RPG/index.html",
+        certName: "勇者之印",
+        slotLabel: "勇者"
+      }
+    ];
+
+    const ADVENTURE_START_KEY = "adventure_start";
+    const COVER_SEEN_KEY = "adventure_cover_seen";
+    const coverScreen = document.querySelector("#coverScreen");
+    const ownedCount = document.querySelector("#ownedCount");
+    const clearBtn = document.querySelector("#clearBtn");
+    const mapFrame = document.querySelector("#mapFrame");
+    const doorHotspot = document.querySelector("#doorHotspot");
+    const doorOverlay = document.querySelector("#doorOverlay");
+    const closeDoorBtn = document.querySelector("#closeDoorBtn");
+    const slots = document.querySelector("#slots");
+    const bag = document.querySelector("#bag");
+    const doorPuzzle = document.querySelector("#doorPuzzle");
+    const victoryScreen = document.querySelector("#victoryScreen");
+    const timeText = document.querySelector("#timeText");
+    const restartAdventureBtn = document.querySelector("#restartAdventureBtn");
+
+    let placed = {};
+    let draggedBadge = null;
+    let touchState = null;
+
+    function init() {
+      if (!localStorage.getItem(ADVENTURE_START_KEY)) {
+        localStorage.setItem(ADVENTURE_START_KEY, String(Date.now()));
+      }
+      initCover();
+      renderMapState();
+    }
+
+    function initCover() {
+      if (sessionStorage.getItem(COVER_SEEN_KEY) === "true") {
+        coverScreen.classList.add("hidden");
+      }
+    }
+
+    function hideCover() {
+      sessionStorage.setItem(COVER_SEEN_KEY, "true");
+      coverScreen.classList.add("hidden");
+    }
+
+    function getOwnedLevels() {
+      return LEVELS.filter(level => localStorage.getItem(level.key) === "true");
+    }
+
+    function renderMapState() {
+      const owned = getOwnedLevels();
+      ownedCount.textContent = `持有 ${owned.length} / ${LEVELS.length}`;
+      document.querySelectorAll(".done-stamp").forEach(stamp => stamp.remove());
+
+      LEVELS.forEach(level => {
+        const hotspot = mapFrame.querySelector(`[data-level="${level.id}"]`);
+        if (hotspot && localStorage.getItem(level.key) === "true") {
+          const stamp = document.createElement("div");
+          stamp.className = "done-stamp";
+          stamp.textContent = "✓";
+          hotspot.appendChild(stamp);
+        }
+      });
+    }
+
+    function goToLevel(levelId) {
+      const level = LEVELS.find(item => item.id === levelId);
+      if (!level) {
+        return;
+      }
+      sessionStorage.setItem(COVER_SEEN_KEY, "true");
+      window.location.href = level.href;
+    }
+
+    function openDoor() {
+      placed = {};
+      doorPuzzle.style.display = "block";
+      victoryScreen.classList.remove("show");
+      renderDoorPuzzle();
+      doorOverlay.classList.add("show");
+    }
+
+    function renderDoorPuzzle() {
+      slots.innerHTML = "";
+      bag.innerHTML = "";
+
+      LEVELS.forEach(level => {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.dataset.slot = level.id;
+        slot.innerHTML = `<div class="slot-label">${level.slotLabel}</div><div>等待憑證</div>`;
+        addSlotEvents(slot);
+        slots.appendChild(slot);
+      });
+
+      const owned = getOwnedLevels();
+      if (owned.length === 0) {
+        bag.innerHTML = `<div class="empty-bag">目前尚未取得憑證，先去挑戰關卡吧。</div>`;
+        return;
+      }
+
+      owned.forEach(level => {
+        bag.appendChild(createBadge(level));
+      });
+    }
+
+    function createBadge(level) {
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.draggable = true;
+      badge.id = `badge-${level.id}`;
+      badge.dataset.cert = level.id;
+      badge.innerHTML = `<div class="badge-icon">${level.icon}</div><div>${level.certName}</div>`;
+
+      badge.addEventListener("dragstart", event => {
+        draggedBadge = badge;
+        badge.classList.add("dragging");
+        event.dataTransfer.setData("text/plain", badge.id);
+      });
+
+      badge.addEventListener("dragend", () => {
+        badge.classList.remove("dragging");
+      });
+
+      badge.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" || badge.classList.contains("locked")) {
+          return;
+        }
+        startTouchDrag(event, badge);
+      });
+
+      return badge;
+    }
+
+    function addSlotEvents(slot) {
+      slot.addEventListener("dragover", event => {
+        event.preventDefault();
+        slot.classList.add("over");
+      });
+      slot.addEventListener("dragleave", () => slot.classList.remove("over"));
+      slot.addEventListener("drop", event => {
+        event.preventDefault();
+        slot.classList.remove("over");
+        const badgeId = event.dataTransfer.getData("text/plain");
+        const badge = document.getElementById(badgeId) || draggedBadge;
+        placeBadge(badge, slot);
+      });
+    }
+
+    function placeBadge(badge, slot) {
+      if (!badge || !slot || badge.classList.contains("locked")) {
+        return;
+      }
+
+      if (badge.dataset.cert === slot.dataset.slot) {
+        slot.innerHTML = "";
+        badge.classList.add("locked");
+        badge.draggable = false;
+        slot.classList.add("correct");
+        slot.appendChild(badge);
+        placed[slot.dataset.slot] = true;
+        checkVictory();
+      } else {
+        slot.classList.remove("wrong");
+        void slot.offsetWidth;
+        slot.classList.add("wrong");
+        setTimeout(() => slot.classList.remove("wrong"), 300);
+      }
+    }
+
+    function checkVictory() {
+      if (LEVELS.every(level => placed[level.id])) {
+        setTimeout(showVictory, 350);
+      }
+    }
+
+    function showVictory() {
+      doorPuzzle.style.display = "none";
+      const start = Number(localStorage.getItem(ADVENTURE_START_KEY)) || Date.now();
+      const totalSeconds = Math.max(0, Math.floor((Date.now() - start) / 1000));
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      timeText.textContent = `總冒險時長：${minutes} 分 ${seconds} 秒`;
+      victoryScreen.classList.add("show");
+    }
+
+    function clearAdventureStorage() {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+
+    function clearProgress() {
+      clearAdventureStorage();
+      localStorage.setItem(ADVENTURE_START_KEY, String(Date.now()));
+      renderMapState();
+      coverScreen.classList.remove("hidden");
+    }
+
+    function restartAdventure() {
+      clearAdventureStorage();
+      doorOverlay.classList.remove("show");
+      localStorage.setItem(ADVENTURE_START_KEY, String(Date.now()));
+      renderMapState();
+      coverScreen.classList.remove("hidden");
+    }
+
+    function startTouchDrag(event, badge) {
+      badge.setPointerCapture(event.pointerId);
+      const clone = badge.cloneNode(true);
+      clone.classList.add("touch-clone");
+      clone.style.left = `${event.clientX}px`;
+      clone.style.top = `${event.clientY}px`;
+      document.body.appendChild(clone);
+      badge.classList.add("dragging");
+      touchState = { badge, clone, pointerId: event.pointerId };
+      badge.addEventListener("pointermove", moveTouchDrag);
+      badge.addEventListener("pointerup", endTouchDrag);
+      badge.addEventListener("pointercancel", cancelTouchDrag);
+    }
+
+    function moveTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      touchState.clone.style.left = `${event.clientX}px`;
+      touchState.clone.style.top = `${event.clientY}px`;
+      document.querySelectorAll(".slot.over").forEach(slot => slot.classList.remove("over"));
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".slot");
+      if (target) {
+        target.classList.add("over");
+      }
+    }
+
+    function endTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      const { badge } = touchState;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".slot");
+      cleanupTouchDrag();
+      document.querySelectorAll(".slot.over").forEach(slot => slot.classList.remove("over"));
+      placeBadge(badge, target);
+    }
+
+    function cancelTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      cleanupTouchDrag();
+    }
+
+    function cleanupTouchDrag() {
+      if (!touchState) {
+        return;
+      }
+      const { badge, clone } = touchState;
+      badge.classList.remove("dragging");
+      badge.removeEventListener("pointermove", moveTouchDrag);
+      badge.removeEventListener("pointerup", endTouchDrag);
+      badge.removeEventListener("pointercancel", cancelTouchDrag);
+      clone.remove();
+      touchState = null;
+    }
+
+    coverScreen.addEventListener("click", hideCover);
+    clearBtn.addEventListener("click", clearProgress);
+    doorHotspot.addEventListener("click", openDoor);
+    closeDoorBtn.addEventListener("click", () => doorOverlay.classList.remove("show"));
+    restartAdventureBtn.addEventListener("click", restartAdventure);
+    doorOverlay.addEventListener("click", event => {
+      if (event.target === doorOverlay) {
+        doorOverlay.classList.remove("show");
+      }
+    });
+    document.querySelectorAll("[data-level]").forEach(hotspot => {
+      hotspot.addEventListener("click", () => goToLevel(hotspot.dataset.level));
+    });
+
+    init();
+  </script>
+</body>
+</html>

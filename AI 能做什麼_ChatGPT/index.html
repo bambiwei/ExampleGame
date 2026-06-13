@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 能做什麼：ChatGPT + Antigravity</title>
+  <style>
+    :root {
+      --bg: #111217;
+      --panel: #1a1d25;
+      --panel-2: #222633;
+      --text: #f7f1e8;
+      --muted: #c9c0b4;
+      --accent: #ffb86b;
+      --accent-2: #f47c5b;
+      --line: rgba(255, 184, 107, 0.24);
+      --good: #8fe0bd;
+      --shadow: rgba(0, 0, 0, 0.32);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(244, 124, 91, 0.20), transparent 34rem),
+        radial-gradient(circle at top right, rgba(255, 184, 107, 0.16), transparent 30rem),
+        var(--bg);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      padding: 56px 24px 36px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0 64px;
+    }
+
+    .hero {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+      gap: 28px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 4.8rem);
+      max-width: 12ch;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-size: clamp(1.55rem, 3vw, 2.25rem);
+    }
+
+    h3 {
+      font-size: 1.14rem;
+      color: var(--accent);
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lead {
+      margin-top: 20px;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 1.15rem;
+    }
+
+    .hero-card {
+      padding: 24px;
+      background: linear-gradient(145deg, rgba(255, 184, 107, 0.16), rgba(34, 38, 51, 0.92));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 20px 60px var(--shadow);
+    }
+
+    .hero-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-size: 1.25rem;
+    }
+
+    .section {
+      margin-top: 36px;
+      padding: 28px;
+      background: rgba(26, 29, 37, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      box-shadow: 0 14px 36px var(--shadow);
+    }
+
+    .intro-grid,
+    .plugin-grid,
+    .talk-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .tile {
+      padding: 20px;
+      background: var(--panel-2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+    }
+
+    .tile p,
+    .work-card p,
+    .plugin-card p,
+    .talk-card p {
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .work-card,
+    .plugin-card,
+    .talk-card {
+      padding: 18px;
+      background: var(--panel-2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 4px 10px;
+      color: #22140b;
+      background: var(--accent);
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 1.15rem;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    .do {
+      border-left: 4px solid var(--good);
+    }
+
+    .dont {
+      border-left: 4px solid var(--accent-2);
+    }
+
+    .footer-note {
+      margin-top: 28px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .intro-grid,
+      .plugin-grid,
+      .talk-grid,
+      .work-grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        padding-top: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div>
+        <p class="eyebrow">給老師的 AI 工作夥伴</p>
+        <h1>AI 能做什麼</h1>
+        <p class="lead">我是 ChatGPT。結合 Antigravity 之後，我不只回答問題，也能在你的電腦工作區裡讀檔、改檔、做網頁、整理資料、檢查程式，像一位能一起動手的教學助理。</p>
+      </div>
+      <aside class="hero-card">
+        <strong>一句話版本</strong>
+        <p>你提出教學目標，我協助把想法變成可用的教材、活動、通知、表單、網頁或自動化流程。</p>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <h2>1. 我是誰，結合 Antigravity 後能做什麼</h2>
+      <div class="intro-grid">
+        <div class="tile">
+          <h3>我是 ChatGPT</h3>
+          <p>我擅長理解需求、整理脈絡、生成文字、設計流程、解釋概念，也能把複雜內容改寫成學生、家長或同事容易理解的版本。</p>
+        </div>
+        <div class="tile">
+          <h3>加上 Antigravity</h3>
+          <p>我可以在本機工作區建立檔案、編輯網頁、檢查專案結構、執行指令與測試，讓「幫我做一份東西」從文字建議變成實際成品。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>2. 我能做的事與教學日常例子</h2>
+      <div class="work-grid">
+        <article class="work-card">
+          <span class="tag">備課</span>
+          <h3>課程設計與教案</h3>
+          <p>例：幫國小五年級自然課設計「水溶液酸鹼」40 分鐘教案，含引起動機、分組實驗、提問與評量。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">評量</span>
+          <h3>出考卷與題庫</h3>
+          <p>例：依據課本範圍產出選擇、填充、簡答題，附答案、配分、難度與雙向細目表。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">教材</span>
+          <h3>講義、簡報與學習單</h3>
+          <p>例：把一篇閱讀文本做成分層學習單，包含詞語解釋、理解題、延伸討論與補救題。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">班經</span>
+          <h3>班級經營</h3>
+          <p>例：設計開學第一週班規共創活動、座位調整原則、值日生制度與正向回饋語句。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">溝通</span>
+          <h3>家長聯絡與通知</h3>
+          <p>例：把「孩子最近作業常遲交」改寫成溫和、具體、可合作的親師溝通訊息。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">差異化</span>
+          <h3>分層與補救教學</h3>
+          <p>例：同一個數學概念設計基礎、標準、挑戰三種任務，讓不同程度學生都能參與。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">行政</span>
+          <h3>表格、紀錄與報告</h3>
+          <p>例：整理導師會議紀錄，產出待辦清單、負責人、期限與可貼到公告的摘要。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">活動</span>
+          <h3>校內活動企劃</h3>
+          <p>例：規劃閱讀週活動流程，含海報文案、闖關任務、志工分工與備品清單。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">數位</span>
+          <h3>網頁與互動小工具</h3>
+          <p>例：做一個班級任務抽籤器、計時器、單字練習頁或成果展介紹頁，直接輸出 HTML。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">語言</span>
+          <h3>翻譯與改寫</h3>
+          <p>例：把英文通知翻成自然中文，或把正式公文改成學生看得懂的說明。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">回饋</span>
+          <h3>學生作品評語</h3>
+          <p>例：根據作文內容產生具體、有鼓勵也有下一步建議的評語，避免空泛稱讚。</p>
+        </article>
+        <article class="work-card">
+          <span class="tag">研究</span>
+          <h3>資料整理與閱讀摘要</h3>
+          <p>例：摘要一份教育文章，整理成三個可用於教學現場的重點與實作建議。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>3. 老師最該裝的 Antigravity 插件 / 擴充功能</h2>
+      <div class="plugin-grid">
+        <article class="plugin-card">
+          <h3>瀏覽器預覽 / Live Preview</h3>
+          <p>做班網、教材頁、互動練習時，可以立刻看成果，不必一直猜畫面長什麼樣。</p>
+        </article>
+        <article class="plugin-card">
+          <h3>Markdown Preview</h3>
+          <p>適合寫教案、會議紀錄、班級公告與學習單草稿，邊寫邊確認排版。</p>
+        </article>
+        <article class="plugin-card">
+          <h3>PDF 工具</h3>
+          <p>方便查看教材 PDF、講義、考卷與行政文件，也能配合我做摘要與重點整理。</p>
+        </article>
+        <article class="plugin-card">
+          <h3>Excel / CSV 檢視器</h3>
+          <p>處理成績、問卷、點名與分組名單時更直覺，我也能協助清理欄位與產生統計。</p>
+        </article>
+        <article class="plugin-card">
+          <h3>Prettier 或格式化工具</h3>
+          <p>若要做網頁或簡單程式，格式化工具會讓檔案乾淨好維護，交給同事也比較不痛苦。</p>
+        </article>
+        <article class="plugin-card">
+          <h3>Git / 版本控制工具</h3>
+          <p>適合長期累積教材與班級網站，能記錄每次修改，改壞時也比較容易找回來。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>4. 怎麼跟我說，回答會最好</h2>
+      <div class="talk-grid">
+        <article class="talk-card do">
+          <h3>Do 1：說清楚對象、年級與目標</h3>
+          <p>例如：「幫國中七年級做 20 分鐘英語口說活動，目標是練習過去式。」</p>
+        </article>
+        <article class="talk-card dont">
+          <h3>Don't 1：只說「幫我做教材」</h3>
+          <p>範圍太大時，我會先猜；你給越多教學限制，成品越貼近現場。</p>
+        </article>
+        <article class="talk-card do">
+          <h3>Do 2：指定格式與可用時間</h3>
+          <p>例如：「請用表格列出，活動總長 40 分鐘，材料只能用白板和便利貼。」</p>
+        </article>
+        <article class="talk-card dont">
+          <h3>Don't 2：把所有任務混在一句話</h3>
+          <p>最好分步驟：先做大綱，再做題目，最後請我檢查語氣與難度。</p>
+        </article>
+        <article class="talk-card do">
+          <h3>Do 3：提供範例或既有資料</h3>
+          <p>貼上課文、題型、班級狀況或舊講義，我可以沿用你的風格與需求。</p>
+        </article>
+        <article class="talk-card dont">
+          <h3>Don't 3：期待第一次就完全定稿</h3>
+          <p>把我當共同備課者：先產草稿，再請我「更口語、降低難度、增加活動性」。</p>
+        </article>
+        <article class="talk-card do">
+          <h3>Do 4：要求我自我檢查</h3>
+          <p>例如：「完成後請檢查是否符合素養導向、是否有答案、是否有時間分配。」</p>
+        </article>
+        <article class="talk-card dont">
+          <h3>Don't 4：直接貼敏感個資</h3>
+          <p>學生姓名、電話、身分證字號等請先匿名化，用「學生 A」「家長 B」就很夠用。</p>
+        </article>
+      </div>
+    </section>
+
+    <p class="footer-note">你可以把我當成一位耐心、會整理、也能動手做檔案的教學協作夥伴。</p>
+  </main>
+</body>
+</html>

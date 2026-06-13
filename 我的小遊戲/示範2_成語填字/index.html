@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>成語填字</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #ead8ad;
+      --paper-light: #f7edcf;
+      --ink: #26170d;
+      --muted: #73583b;
+      --red: #b21f17;
+      --red-light: #e74a32;
+      --green: #2f9b58;
+      --wood: #d9b16f;
+      --gold: #c89638;
+      --shadow: rgba(76, 41, 18, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(178, 31, 23, 0.14), transparent 18rem),
+        radial-gradient(circle at 82% 0%, rgba(200, 150, 56, 0.22), transparent 22rem),
+        linear-gradient(135deg, var(--paper-light), var(--paper));
+      font-family: "Noto Serif TC", "PMingLiU", "Songti TC", serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+      opacity: 0.24;
+      background-image:
+        linear-gradient(30deg, rgba(115, 88, 59, 0.16) 12%, transparent 12.5%, transparent 87%, rgba(115, 88, 59, 0.16) 87.5%, rgba(115, 88, 59, 0.16)),
+        linear-gradient(150deg, rgba(115, 88, 59, 0.12) 12%, transparent 12.5%, transparent 87%, rgba(115, 88, 59, 0.12) 87.5%, rgba(115, 88, 59, 0.12));
+      background-size: 52px 30px;
+    }
+
+    .app {
+      position: relative;
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 30px 0 44px;
+    }
+
+    .map-link {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 9;
+      padding: 9px 13px;
+      color: #fff8e1;
+      background: rgba(74, 23, 15, 0.9);
+      border: 1px solid rgba(178, 31, 23, 0.38);
+      border-radius: 999px;
+      box-shadow: 0 10px 24px var(--shadow);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #4a170f;
+      font-size: clamp(2.25rem, 6vw, 4.6rem);
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .subtitle {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .progress {
+      min-width: 142px;
+      padding: 12px 16px;
+      border: 2px solid var(--red);
+      border-radius: 10px;
+      background: rgba(255, 248, 225, 0.72);
+      box-shadow: 0 12px 28px var(--shadow);
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .progress strong {
+      display: block;
+      color: var(--red);
+      font-size: 1.5rem;
+      line-height: 1.1;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .game-panel {
+      padding: clamp(18px, 4vw, 34px);
+      min-height: 620px;
+      background:
+        linear-gradient(90deg, rgba(178, 31, 23, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(178, 31, 23, 0.08) 1px, transparent 1px),
+        rgba(255, 248, 225, 0.78);
+      background-size: 34px 34px;
+      border: 2px solid rgba(115, 88, 59, 0.44);
+      border-radius: 14px;
+      box-shadow: 0 20px 48px var(--shadow);
+    }
+
+    .idiom-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(8px, 2vw, 16px);
+      margin: 18px 0 24px;
+      font-size: clamp(2.8rem, 10vw, 6rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.04em;
+    }
+
+    .fixed-char,
+    .blank {
+      width: clamp(64px, 17vw, 112px);
+      height: clamp(64px, 17vw, 112px);
+      display: grid;
+      place-items: center;
+    }
+
+    .fixed-char {
+      color: #16100b;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .blank {
+      position: relative;
+      color: var(--red);
+      background: rgba(255, 248, 225, 0.86);
+      border: 3px solid var(--red);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 1px rgba(178, 31, 23, 0.18);
+    }
+
+    .blank::before,
+    .blank::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+    }
+
+    .blank::before {
+      top: 50%;
+      border-top: 1px dashed rgba(178, 31, 23, 0.34);
+    }
+
+    .blank::after {
+      left: 50%;
+      border-left: 1px dashed rgba(178, 31, 23, 0.34);
+    }
+
+    .blank.over {
+      background: rgba(231, 74, 50, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .blank.correct {
+      color: var(--red);
+      background: #fff5df;
+      box-shadow: 0 0 20px rgba(178, 31, 23, 0.22);
+    }
+
+    .bank-title {
+      margin: 8px 0 12px;
+      color: #4a170f;
+      font-size: 1.2rem;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .word-bank {
+      min-height: 190px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(46px, 1fr));
+      gap: 10px;
+      padding: 16px;
+      background: rgba(94, 52, 25, 0.11);
+      border: 1px dashed rgba(115, 88, 59, 0.56);
+      border-radius: 12px;
+    }
+
+    .word-card {
+      min-height: 54px;
+      display: grid;
+      place-items: center;
+      color: #17100b;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.26), transparent 38%),
+        linear-gradient(90deg, rgba(122, 73, 35, 0.10), rgba(255, 255, 255, 0.10), rgba(122, 73, 35, 0.12)),
+        #e9c884;
+      border: 2px solid rgba(122, 73, 35, 0.42);
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(76, 41, 18, 0.20);
+      font-size: 1.75rem;
+      font-weight: 900;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .word-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 22px rgba(76, 41, 18, 0.25);
+    }
+
+    .word-card.dragging {
+      opacity: 0.45;
+    }
+
+    .word-card.wrong {
+      animation: wrongFlash 0.2s ease;
+    }
+
+    .word-card.used {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .stamp {
+      position: relative;
+      z-index: 1;
+      color: var(--red);
+      font-size: clamp(2.8rem, 10vw, 5.8rem);
+      font-weight: 900;
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.34);
+    }
+
+    .result {
+      min-height: 134px;
+      margin-top: 22px;
+      padding: 18px;
+      display: none;
+      background: rgba(255, 248, 225, 0.72);
+      border: 2px solid var(--green);
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(47, 155, 88, 0.12);
+      text-align: center;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result h2 {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 2rem;
+    }
+
+    .result p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    button {
+      padding: 11px 22px;
+      color: #fff8e1;
+      background: linear-gradient(180deg, var(--red-light), var(--red));
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(178, 31, 23, 0.26);
+    }
+
+    .portrait {
+      min-height: 620px;
+      padding: 18px;
+      display: grid;
+      align-content: end;
+      background:
+        linear-gradient(180deg, rgba(255, 248, 225, 0.68), rgba(183, 136, 65, 0.22)),
+        rgba(255, 248, 225, 0.48);
+      border: 2px solid rgba(115, 88, 59, 0.42);
+      border-radius: 14px;
+      box-shadow: 0 20px 48px var(--shadow);
+      overflow: hidden;
+    }
+
+    .portrait svg {
+      width: 100%;
+      max-height: 470px;
+      filter: drop-shadow(0 18px 18px rgba(76, 41, 18, 0.22));
+    }
+
+    .portrait-caption {
+      margin-top: 12px;
+      padding: 10px;
+      color: #4a170f;
+      background: rgba(255, 248, 225, 0.62);
+      border: 1px solid rgba(178, 31, 23, 0.22);
+      border-radius: 8px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .final-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(38, 23, 13, 0.58);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    .final-overlay.show {
+      display: grid;
+    }
+
+    .final-dialog {
+      width: min(92vw, 420px);
+      padding: 28px;
+      background: var(--paper-light);
+      border: 3px solid var(--red);
+      border-radius: 14px;
+      box-shadow: 0 24px 70px rgba(38, 23, 13, 0.34);
+      text-align: center;
+    }
+
+    .final-dialog h2 {
+      margin: 0 0 10px;
+      color: var(--red);
+      font-size: 2.25rem;
+    }
+
+    .final-dialog p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .touch-clone {
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      width: 58px;
+      height: 58px;
+      opacity: 0.92;
+      transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    @keyframes wrongFlash {
+      0%, 100% {
+        transform: translateX(0);
+        box-shadow: 0 8px 16px rgba(76, 41, 18, 0.20);
+      }
+      50% {
+        transform: translateX(5px);
+        border-color: var(--red-light);
+        box-shadow: 0 0 20px rgba(231, 74, 50, 0.85);
+      }
+    }
+
+    @media (max-width: 900px) {
+      header,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .layout {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .portrait {
+        order: -1;
+        min-height: 240px;
+        grid-template-columns: 150px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+      }
+
+      .portrait svg {
+        max-height: 220px;
+      }
+
+      .game-panel {
+        min-height: 0;
+      }
+
+      .word-bank {
+        grid-template-columns: repeat(5, minmax(46px, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .word-bank {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 14px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .word-card {
+        flex: 0 0 58px;
+        scroll-snap-align: start;
+      }
+
+      .portrait {
+        grid-template-columns: 110px minmax(0, 1fr);
+        min-height: 190px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="map-link" href="../大冒險地圖/index.html">← 回到大地圖</a>
+  <main class="app">
+    <header>
+      <div>
+        <h1>成語填字</h1>
+        <p class="subtitle">拖曳字卡補完成語。每場隨機 5 題，答對後會顯示成語意思。</p>
+      </div>
+      <div class="progress">
+        <strong id="progressText">1 / 5</strong>
+        <span>目前題數</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="game-panel">
+        <div class="idiom-row" id="idiomRow" aria-label="成語填空區"></div>
+        <div class="bank-title">字卡區</div>
+        <div class="word-bank" id="wordBank" aria-label="可拖曳字卡"></div>
+
+        <div class="result" id="resultBox">
+          <h2>✓ 答對！</h2>
+          <p id="meaningText"></p>
+          <button type="button" id="nextBtn">下一題</button>
+        </div>
+      </div>
+
+      <aside class="portrait" aria-label="諸葛亮插畫">
+        <svg viewBox="0 0 260 420" role="img" aria-label="諸葛亮手持羽扇的古風插畫">
+          <defs>
+            <linearGradient id="robe" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#6b8f94"/>
+              <stop offset="1" stop-color="#2c4a51"/>
+            </linearGradient>
+            <linearGradient id="fan" x1="0" x2="1">
+              <stop offset="0" stop-color="#fff6dd"/>
+              <stop offset="1" stop-color="#d9c395"/>
+            </linearGradient>
+          </defs>
+          <path d="M38 390 C52 270 56 198 88 166 C108 144 158 144 178 166 C210 198 214 270 226 390 Z" fill="url(#robe)" stroke="#4b2a17" stroke-width="4"/>
+          <path d="M82 240 C104 268 154 268 180 240 L198 392 L64 392 Z" fill="#d8c093" opacity=".55"/>
+          <path d="M76 120 C80 76 104 46 132 46 C164 46 184 78 184 121 C184 160 162 187 132 187 C101 187 76 158 76 120Z" fill="#e6bd8a" stroke="#4b2a17" stroke-width="4"/>
+          <path d="M73 116 C91 84 110 68 132 68 C154 68 174 86 187 116 C182 64 162 31 132 31 C101 31 78 65 73 116Z" fill="#2c241e"/>
+          <path d="M94 42 C106 13 156 13 169 42 L158 56 C144 45 118 45 105 56Z" fill="#1b1713" stroke="#4b2a17" stroke-width="3"/>
+          <rect x="103" y="14" width="58" height="18" rx="5" fill="#2a1c14" stroke="#c89638" stroke-width="3"/>
+          <path d="M104 126 Q116 116 128 126" fill="none" stroke="#2a1c14" stroke-width="4" stroke-linecap="round"/>
+          <path d="M143 126 Q155 116 167 126" fill="none" stroke="#2a1c14" stroke-width="4" stroke-linecap="round"/>
+          <path d="M120 153 Q132 163 146 153" fill="none" stroke="#8b3829" stroke-width="3" stroke-linecap="round"/>
+          <path d="M114 180 Q132 205 151 180" fill="#2c241e"/>
+          <path d="M64 225 C35 249 31 296 48 334 C71 314 88 286 96 246 Z" fill="#547a80" stroke="#4b2a17" stroke-width="4"/>
+          <path d="M196 225 C225 249 229 296 212 334 C189 314 172 286 164 246 Z" fill="#547a80" stroke="#4b2a17" stroke-width="4"/>
+          <path d="M162 224 C190 186 221 166 245 168 C232 213 205 252 169 284Z" fill="url(#fan)" stroke="#4b2a17" stroke-width="4"/>
+          <path d="M169 278 L244 170 M180 260 L235 174 M194 241 L224 178 M210 219 L212 184" stroke="#9a7848" stroke-width="2"/>
+          <path d="M124 214 C136 238 142 276 134 350" fill="none" stroke="#2d3437" stroke-width="5" opacity=".6"/>
+          <circle cx="78" cy="386" r="18" fill="#2c4a51"/>
+          <circle cx="184" cy="386" r="18" fill="#2c4a51"/>
+        </svg>
+        <div class="portrait-caption">孔明曰：先觀其意，再補其字。</div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="final-overlay" id="finalOverlay" role="dialog" aria-modal="true" aria-labelledby="finalTitle">
+    <div class="final-dialog">
+      <h2 id="finalTitle">挑戰完成</h2>
+      <p id="finalScore">總成績：5 / 5</p>
+      <button type="button" id="restartBtn">重新挑戰</button>
+    </div>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+      { 成語: "一鳴驚人", 缺字: [1, 2], 答案: ["鳴", "驚"], 意思: "比喻平時默默無聞，突然有驚人表現。" },
+      { 成語: "風花雪月", 缺字: [1, 3], 答案: ["花", "月"], 意思: "原指四時景色，後比喻浮華空洞的詩文。" },
+      { 成語: "三番五次", 缺字: [1, 3], 答案: ["番", "次"], 意思: "形容次數很多。" },
+      { 成語: "一字千金", 缺字: [1, 3], 答案: ["字", "金"], 意思: "形容文字價值極高。" },
+      { 成語: "畫龍點睛", 缺字: [1, 3], 答案: ["龍", "睛"], 意思: "比喻在關鍵處點明要旨，使內容更加生動有力。" },
+      { 成語: "亡羊補牢", 缺字: [1, 3], 答案: ["羊", "牢"], 意思: "比喻出了差錯後及時補救，還不算太晚。" },
+      { 成語: "守株待兔", 缺字: [1, 3], 答案: ["株", "兔"], 意思: "比喻拘泥舊法，不知變通，或妄想不勞而獲。" },
+      { 成語: "刻舟求劍", 缺字: [1, 3], 答案: ["舟", "劍"], 意思: "比喻不懂情勢變化，仍用固執的方法處理事情。" },
+      { 成語: "杯弓蛇影", 缺字: [1, 2], 答案: ["弓", "蛇"], 意思: "比喻疑神疑鬼，自相驚擾。" },
+      { 成語: "井底之蛙", 缺字: [1, 3], 答案: ["底", "蛙"], 意思: "比喻見識狹小的人。" },
+      { 成語: "指鹿為馬", 缺字: [1, 3], 答案: ["鹿", "馬"], 意思: "比喻故意顛倒是非、混淆黑白。" },
+      { 成語: "破釜沉舟", 缺字: [1, 3], 答案: ["釜", "舟"], 意思: "比喻下定決心，不留退路。" }
+    ];
+
+    const DISTRACTORS = "天地山水雲雨日星春秋東西南北仁義禮智信忠孝勇德書劍心夢光影";
+    const TOTAL_ROUNDS = 5;
+
+    const idiomRow = document.querySelector("#idiomRow");
+    const wordBank = document.querySelector("#wordBank");
+    const progressText = document.querySelector("#progressText");
+    const resultBox = document.querySelector("#resultBox");
+    const meaningText = document.querySelector("#meaningText");
+    const nextBtn = document.querySelector("#nextBtn");
+    const finalOverlay = document.querySelector("#finalOverlay");
+    const finalScore = document.querySelector("#finalScore");
+    const restartBtn = document.querySelector("#restartBtn");
+
+    let gameQuestions = [];
+    let roundIndex = 0;
+    let correctCount = 0;
+    let filledCount = 0;
+    let draggedCard = null;
+    let touchState = null;
+    let audioCtx = null;
+
+    function startGame() {
+      gameQuestions = shuffle([...QUESTIONS]).slice(0, TOTAL_ROUNDS);
+      roundIndex = 0;
+      correctCount = 0;
+      finalOverlay.classList.remove("show");
+      renderRound();
+    }
+
+    function renderRound() {
+      const question = gameQuestions[roundIndex];
+      filledCount = 0;
+      idiomRow.innerHTML = "";
+      wordBank.innerHTML = "";
+      resultBox.classList.remove("show");
+      progressText.textContent = `${roundIndex + 1} / ${TOTAL_ROUNDS}`;
+
+      [...question.成語].forEach((char, index) => {
+        if (question.缺字.includes(index)) {
+          const answerIndex = question.缺字.indexOf(index);
+          const blank = document.createElement("div");
+          blank.className = "blank";
+          blank.dataset.answer = question.答案[answerIndex];
+          blank.dataset.filled = "false";
+          blank.textContent = "□";
+          addDropEvents(blank);
+          idiomRow.appendChild(blank);
+        } else {
+          const fixed = document.createElement("div");
+          fixed.className = "fixed-char";
+          fixed.textContent = char;
+          idiomRow.appendChild(fixed);
+        }
+      });
+
+      buildCards(question).forEach(cardData => {
+        wordBank.appendChild(createWordCard(cardData));
+      });
+    }
+
+    function buildCards(question) {
+      const answers = question.答案.map((char, index) => ({
+        id: `answer-${roundIndex}-${index}`,
+        char,
+        isAnswer: true
+      }));
+
+      const blocked = new Set(question.答案);
+      const distractors = [...DISTRACTORS]
+        .filter(char => !blocked.has(char))
+        .slice(0);
+
+      const picked = shuffle(distractors).slice(0, 13).map((char, index) => ({
+        id: `distractor-${roundIndex}-${index}`,
+        char,
+        isAnswer: false
+      }));
+
+      return shuffle([...answers, ...picked]);
+    }
+
+    function createWordCard(cardData) {
+      const card = document.createElement("div");
+      card.className = "word-card";
+      card.id = cardData.id;
+      card.draggable = true;
+      card.dataset.char = cardData.char;
+      card.textContent = cardData.char;
+
+      card.addEventListener("dragstart", event => {
+        draggedCard = card;
+        card.classList.add("dragging");
+        event.dataTransfer.setData("text/plain", card.id);
+        event.dataTransfer.effectAllowed = "move";
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+      });
+
+      card.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" || card.classList.contains("used")) {
+          return;
+        }
+        startTouchDrag(event, card);
+      });
+
+      return card;
+    }
+
+    function addDropEvents(blank) {
+      blank.addEventListener("dragover", event => {
+        if (blank.dataset.filled === "true") {
+          return;
+        }
+        event.preventDefault();
+        blank.classList.add("over");
+      });
+
+      blank.addEventListener("dragleave", () => blank.classList.remove("over"));
+
+      blank.addEventListener("drop", event => {
+        event.preventDefault();
+        blank.classList.remove("over");
+        const cardId = event.dataTransfer.getData("text/plain");
+        const card = document.getElementById(cardId) || draggedCard;
+        tryFillBlank(card, blank);
+      });
+    }
+
+    function tryFillBlank(card, blank) {
+      if (!card || !blank || blank.dataset.filled === "true" || card.classList.contains("used")) {
+        return;
+      }
+
+      if (card.dataset.char === blank.dataset.answer) {
+        blank.dataset.filled = "true";
+        blank.classList.add("correct");
+        blank.innerHTML = `<span class="stamp">${card.dataset.char}</span>`;
+        card.classList.add("used");
+        filledCount += 1;
+        playBell();
+
+        if (filledCount === 2) {
+          correctCount += 1;
+          setTimeout(showResult, 220);
+        }
+      } else {
+        flashWrong(card);
+      }
+    }
+
+    function flashWrong(card) {
+      card.classList.remove("wrong");
+      void card.offsetWidth;
+      card.classList.add("wrong");
+      setTimeout(() => card.classList.remove("wrong"), 200);
+    }
+
+    function showResult() {
+      const question = gameQuestions[roundIndex];
+      meaningText.textContent = question.意思;
+      nextBtn.textContent = roundIndex === TOTAL_ROUNDS - 1 ? "看總成績" : "下一題";
+      resultBox.classList.add("show");
+    }
+
+    function nextRound() {
+      if (roundIndex === TOTAL_ROUNDS - 1) {
+        localStorage.setItem("cert_idiom", "true");
+        finalScore.textContent = `總成績：${correctCount} / ${TOTAL_ROUNDS}`;
+        finalOverlay.classList.add("show");
+        restartBtn.focus();
+        return;
+      }
+
+      roundIndex += 1;
+      renderRound();
+    }
+
+    function startTouchDrag(event, card) {
+      ensureAudio();
+      card.setPointerCapture(event.pointerId);
+      const clone = card.cloneNode(true);
+      clone.classList.add("touch-clone");
+      clone.style.left = `${event.clientX}px`;
+      clone.style.top = `${event.clientY}px`;
+      document.body.appendChild(clone);
+      card.classList.add("dragging");
+      touchState = { card, clone, pointerId: event.pointerId };
+
+      card.addEventListener("pointermove", moveTouchDrag);
+      card.addEventListener("pointerup", endTouchDrag);
+      card.addEventListener("pointercancel", cancelTouchDrag);
+    }
+
+    function moveTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      touchState.clone.style.left = `${event.clientX}px`;
+      touchState.clone.style.top = `${event.clientY}px`;
+      document.querySelectorAll(".blank.over").forEach(blank => blank.classList.remove("over"));
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".blank");
+      if (target && target.dataset.filled !== "true") {
+        target.classList.add("over");
+      }
+    }
+
+    function endTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      const { card } = touchState;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".blank");
+      cleanupTouchDrag();
+      document.querySelectorAll(".blank.over").forEach(blank => blank.classList.remove("over"));
+      tryFillBlank(card, target);
+    }
+
+    function cancelTouchDrag(event) {
+      if (!touchState || event.pointerId !== touchState.pointerId) {
+        return;
+      }
+      cleanupTouchDrag();
+    }
+
+    function cleanupTouchDrag() {
+      if (!touchState) {
+        return;
+      }
+      const { card, clone } = touchState;
+      card.classList.remove("dragging");
+      card.removeEventListener("pointermove", moveTouchDrag);
+      card.removeEventListener("pointerup", endTouchDrag);
+      card.removeEventListener("pointercancel", cancelTouchDrag);
+      clone.remove();
+      touchState = null;
+    }
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function playBell() {
+      ensureAudio();
+      const now = audioCtx.currentTime;
+      [660, 880, 1320].forEach((frequency, index) => {
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, now + index * 0.035);
+        gain.gain.setValueAtTime(0.0001, now + index * 0.035);
+        gain.gain.exponentialRampToValueAtTime(0.08 / (index + 1), now + index * 0.035 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.035 + 0.22);
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start(now + index * 0.035);
+        oscillator.stop(now + index * 0.035 + 0.24);
+      });
+    }
+
+    function shuffle(items) {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items;
+    }
+
+    document.addEventListener("pointerdown", ensureAudio, { once: true });
+    nextBtn.addEventListener("click", nextRound);
+    restartBtn.addEventListener("click", startGame);
+
+    startGame();
+  </script>
+</body>
+</html>
